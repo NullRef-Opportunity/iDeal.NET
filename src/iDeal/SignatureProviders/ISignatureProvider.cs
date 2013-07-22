@@ -1,7 +1,10 @@
-﻿namespace iDeal.SignatureProviders
+using System.Xml;
+using System.Xml.Linq;
+namespace iDeal.SignatureProviders
 {
     public interface ISignatureProvider
     {
+        XmlDocument SignXmlFile(XmlDocument doc, bool privateKey = true);
         /// <summary>
         /// Gets the digital signature used in each request send to the ideal api (stored in xml field tokenCode)
         /// </summary>
@@ -13,7 +16,7 @@
         /// </summary>
         /// <param name="signature">Signature provided by ideal api, stored in signature value xml field</param>
         /// <param name="messageDigest">Concatenation of designated fields from the status response</param>
-        bool VerifySignature(string signature, string messageDigest);
+        bool VerifySignature(XElement response);
 
         /// <summary>
         /// Gets thumbprint of acceptant's certificate, used in each request to the ideal api (stored in field token)
