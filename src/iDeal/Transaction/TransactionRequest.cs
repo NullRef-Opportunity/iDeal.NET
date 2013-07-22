@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Xml;
 using System.Xml.Linq;
 using iDeal.Base;
 using iDeal.SignatureProviders;
@@ -16,7 +17,7 @@ namespace iDeal.Transaction
         /// <summary>
         /// Unique identifier of issuer
         /// </summary>
-        public int IssuerId { get; private set; }
+        public string IssuerCode { get; private set; }
         
         /// <summary>
         /// Url to which consumer is redirected after authorizing the payment
@@ -52,9 +53,9 @@ namespace iDeal.Transaction
         }
 
         /// <summary>
-        /// Amount measured in cents
+        /// Amount measured 
         /// </summary>
-        public int Amount { get; private set; }
+        public decimal Amount { get; private set; }
 
         /// <summary>
         /// Time until consumer has to have paid, otherwise the transaction is marked as expired by the issuer (consumer's bank)
@@ -111,7 +112,7 @@ namespace iDeal.Transaction
             {
                 return
                     CreateDateTimeStamp +
-                    IssuerId.ToString().PadLeft(4, '0') +
+                    IssuerCode.ToString().PadLeft(4, '0') +
                     MerchantId.PadLeft(9, '0') +
                     MerchantSubId +
                     MerchantReturnUrl +
@@ -124,11 +125,11 @@ namespace iDeal.Transaction
             }
         }
 
-        public TransactionRequest(string merchantId, int? subId, int issuerId, string merchantReturnUrl, string purchaseId, int amount, TimeSpan? expirationPeriod, string description, string entranceCode)
+        public TransactionRequest(string merchantId, int? subId, string issuerCode, string merchantReturnUrl, string purchaseId, decimal amount, TimeSpan? expirationPeriod, string description, string entranceCode)
         {
             MerchantId = merchantId;
             MerchantSubId = subId ?? 0; // If no sub id is specified, sub id should be 0
-            IssuerId = issuerId;
+            IssuerCode = issuerCode;
             MerchantReturnUrl = merchantReturnUrl;
             PurchaseId = purchaseId;
             Amount = amount;
@@ -137,25 +138,22 @@ namespace iDeal.Transaction
             EntranceCode = entranceCode;
         }
 
-        public override string ToXml(ISignatureProvider signatureProvider)
+        public override XmlDocument ToXml(ISignatureProvider signatureProvider)
         {
-            XNamespace xmlNamespace = "http://www.idealdesk.com/Message";
+            XNamespace xmlNamespace = "http://www.idealdesk.com/ideal/messages/mer-acq/3.3.1";
 
-            var directoryRequestXmlMessage =
+            var requestXmlMessage =
                 new XDocument(
                     new XDeclaration("1.0", "UTF-8", null),
                     new XElement(xmlNamespace + "AcquirerTrxReq",
-                        new XAttribute("version", "1.1.0"),
-                        new XElement(xmlNamespace + "createDateTimeStamp", CreateDateTimeStamp),
+                        new XAttribute("version", "3.3.1"),
+                        new XElement(xmlNamespace + "createDateTimestamp", CreateDateTimeStamp),
                         new XElement(xmlNamespace + "Issuer",
-                            new XElement(xmlNamespace + "issuerID", IssuerId.ToString().PadLeft(4,'0'))
+                            new XElement(xmlNamespace + "issuerID", IssuerCode.ToString().PadLeft(4,'0'))
                         ),
                         new XElement(xmlNamespace + "Merchant",
                             new XElement(xmlNamespace + "merchantID", MerchantId.PadLeft(9, '0')),
                             new XElement(xmlNamespace + "subID", MerchantSubId),
-                            new XElement(xmlNamespace + "authentication", "SHA1_RSA"),
-                            new XElement(xmlNamespace + "token", signatureProvider.GetThumbprintAcceptantCertificate()),
-                            new XElement(xmlNamespace + "tokenCode", signatureProvider.GetSignature(MessageDigest)),
                             new XElement(xmlNamespace + "merchantReturnURL", MerchantReturnUrl)
                         ),
                         new XElement(xmlNamespace + "Transaction",
@@ -170,7 +168,13 @@ namespace iDeal.Transaction
                     )
                 );
 
-            return directoryRequestXmlMessage.Declaration + directoryRequestXmlMessage.ToString(SaveOptions.None);
+            var xmlDocument = new XmlDocument();
+            using (var xmlReader = requestXmlMessage.CreateReader())
+            {
+                xmlDocument.Load(xmlReader);
+            }
+
+            return xmlDocument;
         }
     }
 }
