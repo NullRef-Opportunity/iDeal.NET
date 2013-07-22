@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Xml.Linq;
 using iDeal.Base;
 
@@ -16,6 +16,7 @@ namespace iDeal.Status
         /// </summary>
         public Status Status { get; private set; }
 
+        public DateTime StatusDate { get; set; }
         /// <summary>
         /// Consumer name
         /// </summary>
@@ -24,7 +25,10 @@ namespace iDeal.Status
         /// <summary>
         /// Accountnumber of consumer
         /// </summary>
-        public string ConsumerAccountNumber { get; private set; }
+        public string ConsumerIBAN { get; private set; }
+        public string ConsumerBIC { get; private set; }
+        public decimal Amount { get; set; }
+        public string Currency { get; set; }
 
         /// <summary>
         /// Thumbprint of public certificate
@@ -46,23 +50,23 @@ namespace iDeal.Status
                 return CreateDateTimeStamp +
                        TransactionId +
                        Status +
-                       (Status == Status.Success ? ConsumerAccountNumber : "");
+                       (Status == Status.Success ? ConsumerIBAN : "");
             }
         }
 
         /// <summary>
         /// Consumer city
         /// </summary>
-        public string ConsumerCity { get; private set; }
 
         public StatusResponse(string xmlStatusResponse)
         {
             // Parse document
             var xDocument = XElement.Parse(xmlStatusResponse);
-            XNamespace xmlNamespace = "http://www.idealdesk.com/Message";
+            XNamespace xmlNamespace = "http://www.idealdesk.com/ideal/messages/mer-acq/3.3.1";
+            XNamespace xmlNamespaceSignature = "http://www.w3.org/2000/09/xmldsig#";
 
             // Create datetimestamp
-            CreateDateTimeStamp = (xDocument.Element(xmlNamespace + "createDateTimeStamp").Value);
+            CreateDateTimeStamp = (xDocument.Element(xmlNamespace + "createDateTimestamp").Value);
             
             // Acquirer id
             AcquirerId = (int)xDocument.Element(xmlNamespace + "Acquirer").Element(xmlNamespace + "acquirerID");
@@ -94,21 +98,30 @@ namespace iDeal.Status
 
             if (Status == Status.Success)
             {
+                // Status date
+                StatusDate = DateTime.Parse(xDocument.Element(xmlNamespace + "Transaction").Element(xmlNamespace + "statusDateTimestamp").Value);
+
                 // Consumer name
                 ConsumerName = xDocument.Element(xmlNamespace + "Transaction").Element(xmlNamespace + "consumerName").Value;
 
-                // Consumer account number
-                ConsumerAccountNumber = xDocument.Element(xmlNamespace + "Transaction").Element(xmlNamespace + "consumerAccountNumber").Value;
+                // Consumer IBAN
+                ConsumerIBAN = xDocument.Element(xmlNamespace + "Transaction").Element(xmlNamespace + "consumerIBAN").Value;
 
-                // Consumer city
-                ConsumerCity = xDocument.Element(xmlNamespace + "Transaction").Element(xmlNamespace + "consumerCity").Value;
+                // Consumer BIC
+                ConsumerBIC = xDocument.Element(xmlNamespace + "Transaction").Element(xmlNamespace + "consumerBIC").Value;
+
+                // Amount
+                Amount = Decimal.Parse(xDocument.Element(xmlNamespace + "Transaction").Element(xmlNamespace + "amount").Value);
+
+                // Currency
+                Currency = xDocument.Element(xmlNamespace + "Transaction").Element(xmlNamespace + "currency").Value;
             }
 
             // Signature value
-            SignatureValue = xDocument.Element(xmlNamespace + "Signature").Element(xmlNamespace + "signatureValue").Value;
+            SignatureValue = xDocument.Element(xmlNamespaceSignature + "Signature").Element(xmlNamespaceSignature + "SignatureValue").Value;
 
             // Fingerprint
-            Fingerprint = xDocument.Element(xmlNamespace + "Signature").Element(xmlNamespace + "fingerprint").Value;
+            Fingerprint = xDocument.Element(xmlNamespaceSignature + "Signature").Element(xmlNamespaceSignature + "KeyInfo").Element(xmlNamespaceSignature + "KeyName").Value;
 
         }
     }
