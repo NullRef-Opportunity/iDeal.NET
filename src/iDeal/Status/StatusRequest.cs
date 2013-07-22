@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Xml;
 using System.Xml.Linq;
 using iDeal.Base;
 using iDeal.SignatureProviders;
@@ -41,22 +42,19 @@ namespace iDeal.Status
             TransactionId = transactionId;
         }
 
-        public override string ToXml(ISignatureProvider signatureProvider)
+        public override XmlDocument ToXml(ISignatureProvider signatureProvider)
         {
-            XNamespace xmlNamespace = "http://www.idealdesk.com/Message";
+            XNamespace xmlNamespace = "http://www.idealdesk.com/ideal/messages/mer-acq/3.3.1";
 
-            var directoryRequestXmlMessage =
+            var requestXmlMessage =
                 new XDocument(
                     new XDeclaration("1.0", "UTF-8", null),
                     new XElement(xmlNamespace + "AcquirerStatusReq",
-                        new XAttribute("version", "1.1.0"),
-                        new XElement(xmlNamespace + "createDateTimeStamp", CreateDateTimeStamp),
+                        new XAttribute("version", "3.3.1"),
+                        new XElement(xmlNamespace + "createDateTimestamp", CreateDateTimeStamp),
                         new XElement(xmlNamespace + "Merchant",
                             new XElement(xmlNamespace + "merchantID", MerchantId.PadLeft(9, '0')),
-                            new XElement(xmlNamespace + "subID", MerchantSubId),
-                            new XElement(xmlNamespace + "authentication", "SHA1_RSA"),
-                            new XElement(xmlNamespace + "token", signatureProvider.GetThumbprintAcceptantCertificate()),
-                            new XElement(xmlNamespace + "tokenCode", signatureProvider.GetSignature(MessageDigest))
+                            new XElement(xmlNamespace + "subID", MerchantSubId)
                         ),
                         new XElement(xmlNamespace + "Transaction",
                             new XElement(xmlNamespace + "transactionID", TransactionId)
@@ -64,7 +62,13 @@ namespace iDeal.Status
                     )
                 );
 
-            return directoryRequestXmlMessage.Declaration + directoryRequestXmlMessage.ToString(SaveOptions.None);
+            var xmlDocument = new XmlDocument();
+            using (var xmlReader = requestXmlMessage.CreateReader())
+            {
+                xmlDocument.Load(xmlReader);
+            }
+
+            return xmlDocument;
         }
     }
 }
