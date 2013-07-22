@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Configuration;
 using System.Security.Cryptography.X509Certificates;
@@ -19,9 +19,16 @@ namespace iDeal.Configuration
         public X509Certificate2 AcceptantCertificate { get; private set; }
         public X509Certificate2 AcquirerCertificate { get; private set; }
 
-        public DefaultConfiguration(IConfigurationSectionHandler configurationSectionHandler)
+        public DefaultConfiguration(IConfigurationSectionHandler configurationSectionHandler, string merchantId = null)
         {
-            MerchantId = configurationSectionHandler.MerchantId;
+            if (merchantId == null)
+            {
+                MerchantId = configurationSectionHandler.MerchantId;
+            }
+            else
+            {
+                MerchantId = merchantId;
+            }
             MerchantSubId = configurationSectionHandler.MerchantSubId;
             AcquirerUrl = configurationSectionHandler.AcquirerUrl;
 
