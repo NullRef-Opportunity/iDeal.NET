@@ -1,6 +1,7 @@
-﻿using System;
+using System;
 using iDeal.SignatureProviders;
 using iDeal.Base;
+using System.Xml;
 
 namespace iDeal.Base
 {
@@ -48,7 +49,7 @@ namespace iDeal.Base
 
         public abstract string MessageDigest { get; }
 
-        public abstract string ToXml(ISignatureProvider signatureProvider);
+        public abstract XmlDocument ToXml(ISignatureProvider signatureProvider);
 
         protected iDealRequest()
         {
