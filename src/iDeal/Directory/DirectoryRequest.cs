@@ -1,7 +1,12 @@
-﻿using System;
+using System;
 using System.Xml.Linq;
 using iDeal.Base;
 using iDeal.SignatureProviders;
+using Security.Cryptography;
+using System.Security.Cryptography;
+using System.Xml;
+using System.Security.Cryptography.Xml;
+using System.Security.Cryptography.X509Certificates;
 
 namespace iDeal.Directory
 {
@@ -12,7 +17,7 @@ namespace iDeal.Directory
             MerchantId = merchantId;
             MerchantSubId = subId ?? 0; // If no sub id is specified, sub id should be 0
         }
-        
+
         public override string MessageDigest
         {
             get { return CreateDateTimeStamp + MerchantId + MerchantSubId; }
@@ -21,27 +26,32 @@ namespace iDeal.Directory
         /// <summary>
         /// Creates xml representation of directory request
         /// </summary>
-        public override string ToXml(ISignatureProvider signatureProvider)
+        public override XmlDocument ToXml(ISignatureProvider signatureProvider)
         {
-            XNamespace xmlNamespace = "http://www.idealdesk.com/Message";
+            XNamespace xmlNamespace = "http://www.idealdesk.com/ideal/messages/mer-acq/3.3.1";
+            XNamespace xmlNamespaceSignature = "http://www.w3.org/2000/09/xmldsig#";
 
-            var directoryRequestXmlMessage =
-                new XDocument(
-                    new XDeclaration("1.0", "UTF-8", null),
-                    new XElement(xmlNamespace + "DirectoryReq",
-                        new XAttribute("version", "1.1.0"),
-                        new XElement(xmlNamespace + "createDateTimeStamp", CreateDateTimeStamp),
-                        new XElement(xmlNamespace + "Merchant",
-                            new XElement(xmlNamespace + "merchantID", MerchantId.PadLeft(9, '0')),
-                            new XElement(xmlNamespace + "subID", MerchantSubId),
-                            new XElement(xmlNamespace + "authentication", "SHA1_RSA"),
-                            new XElement(xmlNamespace + "token", signatureProvider.GetThumbprintAcceptantCertificate()),
-                            new XElement(xmlNamespace + "tokenCode", signatureProvider.GetSignature(CreateDateTimeStamp + MerchantId + MerchantSubId))
-                        )
-                    )
-                );
+            var requestXmlMessage =
+               new XDocument(
+                   new XDeclaration("1.0", "UTF-8", null),
+                   new XElement(xmlNamespace + "DirectoryReq",
+                       new XAttribute("version", "3.3.1"),
+                       new XElement(xmlNamespace + "createDateTimestamp", CreateDateTimeStamp),
+                       new XElement(xmlNamespace + "Merchant",
+                           new XElement(xmlNamespace + "merchantID", MerchantId.PadLeft(9, '0')),
+                           new XElement(xmlNamespace + "subID", MerchantSubId)
+                       )
+                   )
+               );
 
-            return directoryRequestXmlMessage.Declaration + directoryRequestXmlMessage.ToString(SaveOptions.None);
+            var xmlDocument = new XmlDocument();
+            using (var xmlReader = requestXmlMessage.CreateReader())
+            {
+                xmlDocument.Load(xmlReader);
+            }
+
+            return xmlDocument;
         }
+
     }
 }
