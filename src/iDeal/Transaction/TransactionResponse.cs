@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Xml.Linq;
 using iDeal.Base;
 
@@ -21,14 +21,16 @@ namespace iDeal.Transaction
         /// </summary>
         public string PurchaseId { get; private set; }
 
+        public DateTime CreationDate { get; set; }
+
         public TransactionResponse(string xmlDirectoryResponse)
         {
             // Parse document
             var xDocument = XElement.Parse(xmlDirectoryResponse);
-            XNamespace xmlNamespace = "http://www.idealdesk.com/Message";
+            XNamespace xmlNamespace = "http://www.idealdesk.com/ideal/messages/mer-acq/3.3.1";
 
             // Create datetimestamp
-            CreateDateTimeStamp = xDocument.Element(xmlNamespace + "createDateTimeStamp").Value;
+            CreateDateTimeStamp = xDocument.Element(xmlNamespace + "createDateTimestamp").Value;
             
             // Acquirer id
             AcquirerId = (int)xDocument.Element(xmlNamespace + "Acquirer").Element(xmlNamespace + "acquirerID");
@@ -41,6 +43,9 @@ namespace iDeal.Transaction
 
             // PurchaseId
             PurchaseId = xDocument.Element(xmlNamespace + "Transaction").Element(xmlNamespace + "purchaseID").Value;
+
+            //CreationDate
+            CreationDate = DateTime.Parse(xDocument.Element(xmlNamespace + "Transaction").Element(xmlNamespace + "transactionCreateDateTimestamp").Value);
         }
     }
 }
