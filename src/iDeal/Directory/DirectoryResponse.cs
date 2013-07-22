@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Xml.Linq;
@@ -23,25 +23,24 @@ namespace iDeal.Directory
         {
             // Parse document
             var xDocument = XElement.Parse(xmlDirectoryResponse);
-            XNamespace xmlNamespace = "http://www.idealdesk.com/Message";
+            XNamespace xmlNamespace = "http://www.idealdesk.com/ideal/messages/mer-acq/3.3.1";
 
             // Create datetimestamp
-            CreateDateTimeStamp = xDocument.Element(xmlNamespace + "createDateTimeStamp").Value;
+            CreateDateTimeStamp = xDocument.Element(xmlNamespace + "createDateTimestamp").Value;
             
             // Acquirer id
             AcquirerId = (int)xDocument.Element(xmlNamespace + "Acquirer").Element(xmlNamespace + "acquirerID");
 
             // Directory datetimestamp
-            DirectoryDateTimeStamp = xDocument.Element(xmlNamespace + "Directory").Element(xmlNamespace + "directoryDateTimeStamp").Value;
+            DirectoryDateTimeStamp = xDocument.Element(xmlNamespace + "Directory").Element(xmlNamespace + "directoryDateTimestamp").Value;
 
             // Get list of issuers
-            foreach (var issuer in xDocument.Element(xmlNamespace + "Directory").Elements(xmlNamespace + "Issuer"))
+            foreach (var issuer in xDocument.Element(xmlNamespace + "Directory").Element(xmlNamespace + "Country").Elements(xmlNamespace + "Issuer"))
             {
                 _issuers.Add(
                         new Issuer(
-                                (int)issuer.Element(xmlNamespace + "issuerID"),
-                                issuer.Element(xmlNamespace + "issuerName").Value,
-                                issuer.Element(xmlNamespace + "issuerList").Value == "Short" ? ListType.Shortlist : ListType.Longlist
+                                issuer.Element(xmlNamespace + "issuerID").Value,
+                                issuer.Element(xmlNamespace + "issuerName").Value
                             )
                     );
             }
